@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +14,7 @@ import (
 	"quicktix/internal/platform/database"
 	"quicktix/internal/platform/middleware"
 	pkgredis "quicktix/internal/platform/redis"
+	"quicktix/internal/platform/response"
 	"quicktix/internal/platform/router"
 
 	"github.com/jmoiron/sqlx"
@@ -89,8 +90,9 @@ func main() {
 	authHandler := auth.NewHandler(authService)
 
 	r := router.New()
-	r.Use(middleware.Recovery) // outermost — catches panics from everything inside
-	r.Use(middleware.Logging)
+	r.Use(middleware.RequestID) // Outermost: attaches X-Request-ID to context and response headers
+	r.Use(middleware.Recovery)  // Catches panics from inner handlers
+	r.Use(middleware.Logging)   // Structured request logging with Request ID
 
 	// Base system routes
 	r.Handle("GET /ping", http.HandlerFunc(handlePing))
@@ -138,15 +140,11 @@ func main() {
 }
 
 func handlePing(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"pong"}`))
+	response.JSON(w, http.StatusOK, map[string]string{"message": "pong"})
 }
 
 func handleHealthz(db *sqlx.DB, rdb *redis.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 
@@ -170,28 +168,30 @@ func handleHealthz(db *sqlx.DB, rdb *redis.Client) http.HandlerFunc {
 		}
 
 		if !healthy {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"status":"degraded","database":"` + dbStatus + `","redis":"` + redisStatus + `"}`))
+			response.JSON(w, http.StatusServiceUnavailable, map[string]string{
+				"status":   "degraded",
+				"database": dbStatus,
+				"redis":    redisStatus,
+			})
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok","database":"` + dbStatus + `","redis":"` + redisStatus + `"}`))
+		response.JSON(w, http.StatusOK, map[string]string{
+			"status":   "ok",
+			"database": dbStatus,
+			"redis":    redisStatus,
+		})
 	}
 }
 
 func handleGetEvent(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id") // Go 1.22 built-in path param extraction
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"event_id":"` + id + `"}`))
+	id := r.PathValue("id")
+	response.JSON(w, http.StatusOK, map[string]string{"event_id": id})
 }
 
 func handleOrganizerDashboard(w http.ResponseWriter, r *http.Request) {
 	claims, _ := middleware.GetUserFromContext(r.Context())
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{
+	response.JSON(w, http.StatusOK, map[string]string{
 		"message": "welcome organizer",
 		"user_id": claims.UserID,
 		"role":    claims.Role,
@@ -200,9 +200,7 @@ func handleOrganizerDashboard(w http.ResponseWriter, r *http.Request) {
 
 func handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	claims, _ := middleware.GetUserFromContext(r.Context())
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{
+	response.JSON(w, http.StatusOK, map[string]string{
 		"message": "welcome admin",
 		"user_id": claims.UserID,
 		"role":    claims.Role,

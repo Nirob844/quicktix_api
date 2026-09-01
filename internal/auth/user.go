@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"quicktix/internal/platform/validator"
 )
 
 // Standard RBAC Role Constants
@@ -35,107 +37,68 @@ type User struct {
 
 // RegisterRequest holds DTO payload for user registration.
 type RegisterRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	FullName string `json:"full_name"`
-	Role     string `json:"role"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=6"`
+	FullName string `json:"full_name" validate:"required"`
+	Role     string `json:"role" validate:"omitempty,oneof=buyer organizer admin"`
 }
 
-// Validate validates registration inputs.
-func (r *RegisterRequest) Validate() error {
+// Validate validates registration inputs using the platform validator.
+func (r *RegisterRequest) Validate() map[string]string {
 	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
-	if r.Email == "" {
-		return errors.New("email is required")
-	}
-	if len(r.Password) < 6 {
-		return errors.New("password must be at least 6 characters")
-	}
-	if strings.TrimSpace(r.FullName) == "" {
-		return errors.New("full name is required")
-	}
 	if r.Role == "" {
 		r.Role = RoleBuyer
 	}
 	r.Role = strings.ToLower(r.Role)
-	if r.Role != RoleBuyer && r.Role != RoleOrganizer && r.Role != RoleAdmin {
-		return ErrInvalidRole
-	}
-	return nil
+	return validator.Validate(r)
 }
 
 // LoginRequest holds DTO payload for user login.
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 // Validate validates login inputs.
-func (r *LoginRequest) Validate() error {
+func (r *LoginRequest) Validate() map[string]string {
 	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
-	if r.Email == "" {
-		return errors.New("email is required")
-	}
-	if r.Password == "" {
-		return errors.New("password is required")
-	}
-	return nil
+	return validator.Validate(r)
 }
 
 // ChangePasswordRequest holds DTO payload for changing password when authenticated.
 type ChangePasswordRequest struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
+	OldPassword string `json:"old_password" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=6,nefield=OldPassword"`
 }
 
 // Validate validates change password inputs.
-func (r *ChangePasswordRequest) Validate() error {
-	if r.OldPassword == "" {
-		return errors.New("old password is required")
-	}
-	if len(r.NewPassword) < 6 {
-		return errors.New("new password must be at least 6 characters")
-	}
-	if r.OldPassword == r.NewPassword {
-		return ErrSamePassword
-	}
-	return nil
+func (r *ChangePasswordRequest) Validate() map[string]string {
+	return validator.Validate(r)
 }
 
 // ForgotPasswordRequest holds DTO payload for requesting a password reset.
 type ForgotPasswordRequest struct {
-	Email string `json:"email"`
+	Email string `json:"email" validate:"required,email"`
 }
 
 // Validate validates forgot password inputs.
-func (r *ForgotPasswordRequest) Validate() error {
+func (r *ForgotPasswordRequest) Validate() map[string]string {
 	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
-	if r.Email == "" {
-		return errors.New("email is required")
-	}
-	return nil
+	return validator.Validate(r)
 }
 
 // ResetPasswordRequest holds DTO payload for executing a password reset with token.
 type ResetPasswordRequest struct {
-	Email       string `json:"email"`
-	ResetToken  string `json:"reset_token"`
-	NewPassword string `json:"new_password"`
+	Email       string `json:"email" validate:"required,email"`
+	ResetToken  string `json:"reset_token" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=6"`
 }
 
 // Validate validates reset password inputs.
-func (r *ResetPasswordRequest) Validate() error {
+func (r *ResetPasswordRequest) Validate() map[string]string {
 	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
-	if r.Email == "" {
-		return errors.New("email is required")
-	}
 	r.ResetToken = strings.TrimSpace(r.ResetToken)
-	if r.ResetToken == "" {
-		return errors.New("reset token is required")
-	}
-	if len(r.NewPassword) < 6 {
-		return errors.New("new password must be at least 6 characters")
-	}
-	return nil
+	return validator.Validate(r)
 }
 
 // UserResponse represents safe public user payload.

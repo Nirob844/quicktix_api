@@ -47,8 +47,8 @@ func NewService(repo Repository, rdb *redis.Client, jwtSecret string, jwtTTL tim
 }
 
 func (s *service) Register(ctx context.Context, req RegisterRequest) (*AuthResponse, error) {
-	if err := req.Validate(); err != nil {
-		return nil, err
+	if valErrs := req.Validate(); valErrs != nil {
+		return nil, fmt.Errorf("validation failed: %v", valErrs)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -86,8 +86,8 @@ func (s *service) Register(ctx context.Context, req RegisterRequest) (*AuthRespo
 }
 
 func (s *service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, error) {
-	if err := req.Validate(); err != nil {
-		return nil, err
+	if valErrs := req.Validate(); valErrs != nil {
+		return nil, fmt.Errorf("validation failed: %v", valErrs)
 	}
 
 	user, err := s.repo.GetUserByEmail(ctx, req.Email)
@@ -120,8 +120,8 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, e
 }
 
 func (s *service) ChangePassword(ctx context.Context, userID string, req ChangePasswordRequest) error {
-	if err := req.Validate(); err != nil {
-		return err
+	if valErrs := req.Validate(); valErrs != nil {
+		return fmt.Errorf("validation failed: %v", valErrs)
 	}
 
 	user, err := s.repo.GetUserByID(ctx, userID)
@@ -142,14 +142,13 @@ func (s *service) ChangePassword(ctx context.Context, userID string, req ChangeP
 }
 
 func (s *service) ForgotPassword(ctx context.Context, req ForgotPasswordRequest) (string, error) {
-	if err := req.Validate(); err != nil {
-		return "", err
+	if valErrs := req.Validate(); valErrs != nil {
+		return "", fmt.Errorf("validation failed: %v", valErrs)
 	}
 
 	user, err := s.repo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if err == ErrUserNotFound {
-			// Return silent success or error depending on security policy; here we check user exists
 			return "", ErrUserNotFound
 		}
 		return "", err
@@ -174,8 +173,8 @@ func (s *service) ForgotPassword(ctx context.Context, req ForgotPasswordRequest)
 }
 
 func (s *service) ResetPassword(ctx context.Context, req ResetPasswordRequest) error {
-	if err := req.Validate(); err != nil {
-		return err
+	if valErrs := req.Validate(); valErrs != nil {
+		return fmt.Errorf("validation failed: %v", valErrs)
 	}
 
 	var storedToken string

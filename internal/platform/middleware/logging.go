@@ -17,6 +17,7 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+// Logging middleware logs HTTP request details including Request ID.
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -24,7 +25,10 @@ func Logging(next http.Handler) http.Handler {
 
 		next.ServeHTTP(rw, r)
 
-		slog.Info("request",
+		reqID := GetRequestID(r.Context())
+
+		slog.Info("http request handled",
+			"request_id", reqID,
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", rw.statusCode,
