@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS events (
-    id UUID PRIMARY KEY,
-    organizer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id VARCHAR(36) PRIMARY KEY,
+    organizer_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     venue VARCHAR(255) NOT NULL,
@@ -18,8 +18,8 @@ CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
 CREATE INDEX IF NOT EXISTS idx_events_sale_start_time ON events(sale_start_time);
 
 CREATE TABLE IF NOT EXISTS ticket_types (
-    id UUID PRIMARY KEY,
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    id VARCHAR(36) PRIMARY KEY,
+    event_id VARCHAR(36) NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
     total_quantity INT NOT NULL CHECK (total_quantity >= 0),
