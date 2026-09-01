@@ -13,6 +13,7 @@ type Service interface {
 	CreateEvent(ctx context.Context, organizerID string, req CreateEventRequest) (*Event, error)
 	GetEventByID(ctx context.Context, eventID string) (*Event, error)
 	UpdateEvent(ctx context.Context, userID string, userRole string, eventID string, req UpdateEventRequest) (*Event, error)
+	ListEvents(ctx context.Context, filter EventListFilter) (*PaginatedEventsResponse, error)
 }
 
 type service struct {
@@ -118,6 +119,27 @@ func (s *service) UpdateEvent(ctx context.Context, userID string, userRole strin
 
 	existingEvent.TicketTypes = tickets
 	return existingEvent, nil
+}
+
+func (s *service) ListEvents(ctx context.Context, filter EventListFilter) (*PaginatedEventsResponse, error) {
+	if filter.Page < 1 {
+		filter.Page = 1
+	}
+	if filter.Limit < 1 {
+		filter.Limit = 10
+	}
+
+	events, total, err := s.repo.ListEvents(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PaginatedEventsResponse{
+		Events: events,
+		Total:  total,
+		Page:   filter.Page,
+		Limit:  filter.Limit,
+	}, nil
 }
 
 type validationErr struct {

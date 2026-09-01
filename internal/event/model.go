@@ -44,6 +44,22 @@ type TicketType struct {
 	UpdatedAt         time.Time `db:"updated_at" json:"updated_at"`
 }
 
+// EventListFilter holds parameters for searching and paginating events.
+type EventListFilter struct {
+	Search string `json:"search"`
+	Status string `json:"status"`
+	Page   int    `json:"page"`
+	Limit  int    `json:"limit"`
+}
+
+// PaginatedEventsResponse represents paginated event list response.
+type PaginatedEventsResponse struct {
+	Events []Event `json:"events"`
+	Total  int     `json:"total"`
+	Page   int     `json:"page"`
+	Limit  int     `json:"limit"`
+}
+
 // CreateTicketTypeRequest holds payload for ticket type creation.
 type CreateTicketTypeRequest struct {
 	Name     string  `json:"name" validate:"required,min=2"`

@@ -10,6 +10,7 @@ import (
 // RegisterRoutes registers all event domain endpoints to the application router.
 func (h *Handler) RegisterRoutes(r *router.Router, jwtSecret string) {
 	// Public event endpoints
+	r.Handle("GET /api/v1/events", http.HandlerFunc(h.List))
 	r.Handle("GET /api/v1/events/{id}", http.HandlerFunc(h.Get))
 
 	// Protected Organizer endpoints

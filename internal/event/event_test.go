@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 )
@@ -40,6 +41,19 @@ func (m *mockRepository) UpdateEventWithTickets(ctx context.Context, event *Even
 	m.events[event.ID] = event
 	m.tickets[event.ID] = tickets
 	return nil
+}
+
+func (m *mockRepository) ListEvents(ctx context.Context, filter EventListFilter) ([]Event, int, error) {
+	var list []Event
+	for _, e := range m.events {
+		if filter.Search != "" && !strings.Contains(strings.ToLower(e.Name), strings.ToLower(filter.Search)) && !strings.Contains(strings.ToLower(e.Venue), strings.ToLower(filter.Search)) {
+			continue
+		}
+		eCopy := *e
+		eCopy.TicketTypes = m.tickets[e.ID]
+		list = append(list, eCopy)
+	}
+	return list, len(list), nil
 }
 
 func TestEventServiceFlows(t *testing.T) {
@@ -111,7 +125,19 @@ func TestEventServiceFlows(t *testing.T) {
 		t.Errorf("expected updated name, got %s", updatedEvent.Name)
 	}
 
-	// 4. Sale Start Restriction Test (Sales already started)
+	// 4. Public List Events Test
+	listResp, err := svc.ListEvents(ctx, EventListFilter{Search: "Conference"})
+	if err != nil {
+		t.Fatalf("expected successful event search, got: %v", err)
+	}
+	if listResp.Total != 1 {
+		t.Errorf("expected 1 event matching 'Conference', got %d", listResp.Total)
+	}
+	if len(listResp.Events[0].TicketTypes) != 1 {
+		t.Errorf("expected ticket types embedded in list response")
+	}
+
+	// 5. Sale Start Restriction Test (Sales already started)
 	repo.events[createdEvent.ID].SaleStartTime = now.Add(-1 * time.Hour) // Past sale start
 
 	_, err = svc.UpdateEvent(ctx, orgA, "organizer", createdEvent.ID, updateReq)

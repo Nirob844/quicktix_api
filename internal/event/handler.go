@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"quicktix/internal/platform/middleware"
 	"quicktix/internal/platform/response"
@@ -71,6 +72,29 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, EventResponse{Event: *event})
+}
+
+// List handles GET /api/v1/events public search and pagination requests.
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+
+	page, _ := strconv.Atoi(query.Get("page"))
+	limit, _ := strconv.Atoi(query.Get("limit"))
+
+	filter := EventListFilter{
+		Search: query.Get("search"),
+		Status: query.Get("status"),
+		Page:   page,
+		Limit:  limit,
+	}
+
+	resp, err := h.service.ListEvents(r.Context(), filter)
+	if err != nil {
+		response.InternalServerError(w, "failed to list events")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, resp)
 }
 
 // Update handles PUT /api/v1/events/{id} requests.
