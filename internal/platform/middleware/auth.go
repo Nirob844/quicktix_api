@@ -1,24 +1,33 @@
-package auth
+package middleware
 
 import (
 	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	"quicktix/internal/platform/token"
 )
 
 type contextKey string
 
 const userContextKey contextKey = "user_claims"
 
+// Role constants
+const (
+	RoleBuyer     = "buyer"
+	RoleOrganizer = "organizer"
+	RoleAdmin     = "admin"
+)
+
 // WithUserContext returns a new context with user claims attached.
-func WithUserContext(ctx context.Context, claims *JWTClaims) context.Context {
+func WithUserContext(ctx context.Context, claims *token.JWTClaims) context.Context {
 	return context.WithValue(ctx, userContextKey, claims)
 }
 
 // GetUserFromContext extracts JWTClaims from the request context if present.
-func GetUserFromContext(ctx context.Context) (*JWTClaims, bool) {
-	claims, ok := ctx.Value(userContextKey).(*JWTClaims)
+func GetUserFromContext(ctx context.Context) (*token.JWTClaims, bool) {
+	claims, ok := ctx.Value(userContextKey).(*token.JWTClaims)
 	return claims, ok
 }
 
@@ -43,7 +52,7 @@ func Authenticate(jwtSecret string) func(http.Handler) http.Handler {
 			}
 
 			tokenString := parts[1]
-			claims, err := ValidateJWT(tokenString, jwtSecret)
+			claims, err := token.ValidateJWT(tokenString, jwtSecret)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusUnauthorized)

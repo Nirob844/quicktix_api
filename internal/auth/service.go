@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"quicktix/internal/platform/token"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -55,13 +57,13 @@ func (s *service) Register(ctx context.Context, req RegisterRequest) (*AuthRespo
 		return nil, err
 	}
 
-	token, err := GenerateJWT(user.ID, user.Email, user.Role, s.jwtSecret, s.jwtTTL)
+	t, err := token.GenerateJWT(user.ID, user.Email, user.Role, s.jwtSecret, s.jwtTTL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth token: %w", err)
 	}
 
 	return &AuthResponse{
-		Token: token,
+		Token: t,
 		User: UserResponse{
 			ID:        user.ID,
 			Email:     user.Email,
@@ -89,13 +91,13 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, e
 		return nil, ErrInvalidPassword
 	}
 
-	token, err := GenerateJWT(user.ID, user.Email, user.Role, s.jwtSecret, s.jwtTTL)
+	t, err := token.GenerateJWT(user.ID, user.Email, user.Role, s.jwtSecret, s.jwtTTL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth token: %w", err)
 	}
 
 	return &AuthResponse{
-		Token: token,
+		Token: t,
 		User: UserResponse{
 			ID:        user.ID,
 			Email:     user.Email,
@@ -105,4 +107,3 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, e
 		},
 	}, nil
 }
-

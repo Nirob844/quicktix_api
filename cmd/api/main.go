@@ -100,11 +100,11 @@ func main() {
 	// Authentication routes
 	r.Handle("POST /api/v1/auth/register", http.HandlerFunc(authHandler.Register))
 	r.Handle("POST /api/v1/auth/login", http.HandlerFunc(authHandler.Login))
-	r.Handle("GET /api/v1/auth/me", auth.Authenticate(jwtSecret)(http.HandlerFunc(authHandler.Me)))
+	r.Handle("GET /api/v1/auth/me", middleware.Authenticate(jwtSecret)(http.HandlerFunc(authHandler.Me)))
 
 	// RBAC Protected Demo Endpoints
-	r.Handle("GET /api/v1/organizer/dashboard", auth.Authenticate(jwtSecret)(auth.RequireOrganizer()(http.HandlerFunc(handleOrganizerDashboard))))
-	r.Handle("GET /api/v1/admin/dashboard", auth.Authenticate(jwtSecret)(auth.RequireAdmin()(http.HandlerFunc(handleAdminDashboard))))
+	r.Handle("GET /api/v1/organizer/dashboard", middleware.Authenticate(jwtSecret)(middleware.RequireOrganizer()(http.HandlerFunc(handleOrganizerDashboard))))
+	r.Handle("GET /api/v1/admin/dashboard", middleware.Authenticate(jwtSecret)(middleware.RequireAdmin()(http.HandlerFunc(handleAdminDashboard))))
 
 	srv := &http.Server{
 		Addr:         ":" + port,
@@ -190,7 +190,7 @@ func handleGetEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleOrganizerDashboard(w http.ResponseWriter, r *http.Request) {
-	claims, _ := auth.GetUserFromContext(r.Context())
+	claims, _ := middleware.GetUserFromContext(r.Context())
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{
@@ -201,7 +201,7 @@ func handleOrganizerDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
-	claims, _ := auth.GetUserFromContext(r.Context())
+	claims, _ := middleware.GetUserFromContext(r.Context())
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]string{
