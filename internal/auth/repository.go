@@ -15,6 +15,8 @@ type Repository interface {
 	CreateUser(ctx context.Context, user *User) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id string) (*User, error)
+	UpdatePassword(ctx context.Context, userID string, newPasswordHash string) error
+	UpdatePasswordByEmail(ctx context.Context, email string, newPasswordHash string) error
 }
 
 type postgresRepository struct {
@@ -86,3 +88,38 @@ func (r *postgresRepository) GetUserByID(ctx context.Context, id string) (*User,
 	return &user, nil
 }
 
+func (r *postgresRepository) UpdatePassword(ctx context.Context, userID string, newPasswordHash string) error {
+	query := `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`
+	res, err := r.db.ExecContext(ctx, query, newPasswordHash, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update user password: %w", err)
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *postgresRepository) UpdatePasswordByEmail(ctx context.Context, email string, newPasswordHash string) error {
+	query := `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2`
+	res, err := r.db.ExecContext(ctx, query, newPasswordHash, email)
+	if err != nil {
+		return fmt.Errorf("failed to update user password by email: %w", err)
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
+}

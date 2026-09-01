@@ -43,9 +43,30 @@ func (m *mockRepo) GetUserByID(ctx context.Context, id string) (*User, error) {
 	return nil, ErrUserNotFound
 }
 
+func (m *mockRepo) UpdatePassword(ctx context.Context, userID string, newPasswordHash string) error {
+	for _, u := range m.users {
+		if u.ID == userID {
+			u.PasswordHash = newPasswordHash
+			u.UpdatedAt = time.Now()
+			return nil
+		}
+	}
+	return ErrUserNotFound
+}
+
+func (m *mockRepo) UpdatePasswordByEmail(ctx context.Context, email string, newPasswordHash string) error {
+	user, exists := m.users[email]
+	if !exists {
+		return ErrUserNotFound
+	}
+	user.PasswordHash = newPasswordHash
+	user.UpdatedAt = time.Now()
+	return nil
+}
+
 func TestRegisterAndLogin(t *testing.T) {
 	repo := newMockRepo()
-	svc := NewService(repo, "test-secret-key", 1*time.Hour)
+	svc := NewService(repo, nil, "test-secret-key", 1*time.Hour)
 	ctx := context.Background()
 
 	// 1. Register User
@@ -103,4 +124,3 @@ func TestRegisterAndLogin(t *testing.T) {
 		t.Errorf("expected ErrInvalidPassword for wrong password, got: %v", err)
 	}
 }
-

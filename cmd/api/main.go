@@ -85,7 +85,7 @@ func main() {
 
 	// Initialize Auth module
 	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo, jwtSecret, 24*time.Hour)
+	authService := auth.NewService(authRepo, rdb, jwtSecret, 24*time.Hour)
 	authHandler := auth.NewHandler(authService)
 
 	r := router.New()

@@ -11,7 +11,7 @@ import (
 
 func TestAuthHTTPHandlers(t *testing.T) {
 	repo := newMockRepo()
-	svc := NewService(repo, "secret-key-123", 1*time.Hour)
+	svc := NewService(repo, nil, "secret-key-123", 1*time.Hour)
 	handler := NewHandler(svc)
 
 	mux := http.NewServeMux()
@@ -98,4 +98,3 @@ func TestAuthHTTPHandlers(t *testing.T) {
 		t.Errorf("expected status 401 Unauthorized, got %d", badResp.StatusCode)
 	}
 }
-

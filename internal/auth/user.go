@@ -18,6 +18,8 @@ var (
 	ErrUserNotFound      = errors.New("user not found")
 	ErrInvalidPassword   = errors.New("invalid email or password")
 	ErrInvalidRole       = errors.New("role must be 'buyer', 'organizer', or 'admin'")
+	ErrInvalidResetToken = errors.New("invalid or expired password reset token")
+	ErrSamePassword      = errors.New("new password cannot be identical to old password")
 )
 
 // User represents the user domain model in PostgreSQL.
@@ -75,6 +77,63 @@ func (r *LoginRequest) Validate() error {
 	}
 	if r.Password == "" {
 		return errors.New("password is required")
+	}
+	return nil
+}
+
+// ChangePasswordRequest holds DTO payload for changing password when authenticated.
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
+
+// Validate validates change password inputs.
+func (r *ChangePasswordRequest) Validate() error {
+	if r.OldPassword == "" {
+		return errors.New("old password is required")
+	}
+	if len(r.NewPassword) < 6 {
+		return errors.New("new password must be at least 6 characters")
+	}
+	if r.OldPassword == r.NewPassword {
+		return ErrSamePassword
+	}
+	return nil
+}
+
+// ForgotPasswordRequest holds DTO payload for requesting a password reset.
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+// Validate validates forgot password inputs.
+func (r *ForgotPasswordRequest) Validate() error {
+	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
+	if r.Email == "" {
+		return errors.New("email is required")
+	}
+	return nil
+}
+
+// ResetPasswordRequest holds DTO payload for executing a password reset with token.
+type ResetPasswordRequest struct {
+	Email       string `json:"email"`
+	ResetToken  string `json:"reset_token"`
+	NewPassword string `json:"new_password"`
+}
+
+// Validate validates reset password inputs.
+func (r *ResetPasswordRequest) Validate() error {
+	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
+	if r.Email == "" {
+		return errors.New("email is required")
+	}
+	r.ResetToken = strings.TrimSpace(r.ResetToken)
+	if r.ResetToken == "" {
+		return errors.New("reset token is required")
+	}
+	if len(r.NewPassword) < 6 {
+		return errors.New("new password must be at least 6 characters")
 	}
 	return nil
 }
