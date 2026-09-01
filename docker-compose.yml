@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: quicktix_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: quicktix
+      POSTGRES_PASSWORD: quicktix
+      POSTGRES_DB: quicktix
+    ports:
+      - "5433:5432"
+    volumes:
+      - quicktix_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quicktix"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quicktix_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: quicktix_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - quicktix_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quicktix_net
+
+  api:
+    build: .
+    container_name: quicktix_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://quicktix:quicktix@postgres:5432/quicktix?sslmode=disable
+      REDIS_ADDR: redis:6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - quicktix_net
+
+volumes:
+  quicktix_pg_data:
+  quicktix_redis_data:
+
+networks:
+  quicktix_net:
+    driver: bridge

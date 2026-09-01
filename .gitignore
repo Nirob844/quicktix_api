@@ -1,0 +1,12 @@
+# Binaries
+bin/
+tmp/
+
+# Environment files
+.env
+!.env.example
+
+# IDEs & OS files
+.vscode/
+.idea/
+.DS_Store
