@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"quicktix/internal/auth"
+	"quicktix/internal/event"
 	"quicktix/internal/platform/database"
 	"quicktix/internal/platform/middleware"
 	pkgredis "quicktix/internal/platform/redis"
@@ -89,6 +89,11 @@ func main() {
 	authService := auth.NewService(authRepo, rdb, jwtSecret, 24*time.Hour)
 	authHandler := auth.NewHandler(authService)
 
+	// Initialize Event module
+	eventRepo := event.NewRepository(db)
+	eventService := event.NewService(eventRepo)
+	eventHandler := event.NewHandler(eventService)
+
 	r := router.New()
 	r.Use(middleware.RequestID) // Outermost: attaches X-Request-ID to context and response headers
 	r.Use(middleware.Recovery)  // Catches panics from inner handlers
@@ -97,10 +102,10 @@ func main() {
 	// Base system routes
 	r.Handle("GET /ping", http.HandlerFunc(handlePing))
 	r.Handle("GET /healthz", handleHealthz(db, rdb))
-	r.Handle("GET /events/{id}", http.HandlerFunc(handleGetEvent)) // path param demo
 
 	// Register Domain Module Routes
 	authHandler.RegisterRoutes(r, jwtSecret)
+	eventHandler.RegisterRoutes(r, jwtSecret)
 
 	// RBAC Protected Demo Endpoints
 	r.Handle("GET /api/v1/organizer/dashboard", middleware.Authenticate(jwtSecret)(middleware.RequireOrganizer()(http.HandlerFunc(handleOrganizerDashboard))))
@@ -182,11 +187,6 @@ func handleHealthz(db *sqlx.DB, rdb *redis.Client) http.HandlerFunc {
 			"redis":    redisStatus,
 		})
 	}
-}
-
-func handleGetEvent(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	response.JSON(w, http.StatusOK, map[string]string{"event_id": id})
 }
 
 func handleOrganizerDashboard(w http.ResponseWriter, r *http.Request) {
