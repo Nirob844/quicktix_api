@@ -92,15 +92,13 @@ func main() {
 	r.Use(middleware.Recovery) // outermost — catches panics from everything inside
 	r.Use(middleware.Logging)
 
-	// Health and ping routes
+	// Base system routes
 	r.Handle("GET /ping", http.HandlerFunc(handlePing))
 	r.Handle("GET /healthz", handleHealthz(db, rdb))
 	r.Handle("GET /events/{id}", http.HandlerFunc(handleGetEvent)) // path param demo
 
-	// Authentication routes
-	r.Handle("POST /api/v1/auth/register", http.HandlerFunc(authHandler.Register))
-	r.Handle("POST /api/v1/auth/login", http.HandlerFunc(authHandler.Login))
-	r.Handle("GET /api/v1/auth/me", middleware.Authenticate(jwtSecret)(http.HandlerFunc(authHandler.Me)))
+	// Register Domain Module Routes
+	authHandler.RegisterRoutes(r, jwtSecret)
 
 	// RBAC Protected Demo Endpoints
 	r.Handle("GET /api/v1/organizer/dashboard", middleware.Authenticate(jwtSecret)(middleware.RequireOrganizer()(http.HandlerFunc(handleOrganizerDashboard))))
