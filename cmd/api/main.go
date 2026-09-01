@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"quicktix/internal/auth"
 	"quicktix/internal/platform/database"
 	"quicktix/internal/platform/middleware"
 	pkgredis "quicktix/internal/platform/redis"
@@ -35,6 +36,11 @@ func main() {
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
 		redisAddr = "localhost:6380"
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "super-secret-jwt-key-quicktix"
 	}
 
 	db, err := database.Connect(database.Config{
@@ -76,13 +82,23 @@ func main() {
 		}
 	}
 
+	// Initialize Auth module
+	authRepo := auth.NewRepository(db)
+	authService := auth.NewService(authRepo, jwtSecret, 24*time.Hour)
+	authHandler := auth.NewHandler(authService)
+
 	r := router.New()
 	r.Use(middleware.Recovery) // outermost — catches panics from everything inside
 	r.Use(middleware.Logging)
 
+	// Health and ping routes
 	r.Handle("GET /ping", handlePing)
 	r.Handle("GET /healthz", handleHealthz(db, rdb))
 	r.Handle("GET /events/{id}", handleGetEvent) // path param demo
+
+	// Authentication routes
+	r.Handle("POST /api/v1/auth/register", http.HandlerFunc(authHandler.Register))
+	r.Handle("POST /api/v1/auth/login", http.HandlerFunc(authHandler.Login))
 
 	srv := &http.Server{
 		Addr:         ":" + port,
