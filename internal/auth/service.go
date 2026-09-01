@@ -105,3 +105,4 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*AuthResponse, e
 		},
 	}, nil
 }
+

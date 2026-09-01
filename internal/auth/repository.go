@@ -85,3 +85,4 @@ func (r *postgresRepository) GetUserByID(ctx context.Context, id string) (*User,
 
 	return &user, nil
 }
+

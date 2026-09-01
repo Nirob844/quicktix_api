@@ -26,7 +26,12 @@ func (r *Router) Use(mw Middleware) {
 }
 
 // Handle registers a route. pattern follows Go 1.22 syntax: "GET /events/{id}"
-func (r *Router) Handle(pattern string, handler http.HandlerFunc) {
+func (r *Router) Handle(pattern string, handler http.Handler) {
+	r.mux.Handle(pattern, handler)
+}
+
+// HandleFunc registers a route with an http.HandlerFunc.
+func (r *Router) HandleFunc(pattern string, handler http.HandlerFunc) {
 	r.mux.HandleFunc(pattern, handler)
 }
 

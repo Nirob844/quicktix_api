@@ -92,13 +92,14 @@ func main() {
 	r.Use(middleware.Logging)
 
 	// Health and ping routes
-	r.Handle("GET /ping", handlePing)
+	r.Handle("GET /ping", http.HandlerFunc(handlePing))
 	r.Handle("GET /healthz", handleHealthz(db, rdb))
-	r.Handle("GET /events/{id}", handleGetEvent) // path param demo
+	r.Handle("GET /events/{id}", http.HandlerFunc(handleGetEvent)) // path param demo
 
 	// Authentication routes
 	r.Handle("POST /api/v1/auth/register", http.HandlerFunc(authHandler.Register))
 	r.Handle("POST /api/v1/auth/login", http.HandlerFunc(authHandler.Login))
+	r.Handle("GET /api/v1/auth/me", auth.Authenticate(jwtSecret)(http.HandlerFunc(authHandler.Me)))
 
 	srv := &http.Server{
 		Addr:         ":" + port,

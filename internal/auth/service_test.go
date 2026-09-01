@@ -103,3 +103,4 @@ func TestRegisterAndLogin(t *testing.T) {
 		t.Errorf("expected ErrInvalidPassword for wrong password, got: %v", err)
 	}
 }
+

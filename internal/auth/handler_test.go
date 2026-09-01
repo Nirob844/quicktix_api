@@ -98,3 +98,4 @@ func TestAuthHTTPHandlers(t *testing.T) {
 		t.Errorf("expected status 401 Unauthorized, got %d", badResp.StatusCode)
 	}
 }
+
