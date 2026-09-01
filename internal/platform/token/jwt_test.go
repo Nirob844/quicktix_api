@@ -49,3 +49,4 @@ func TestJWTGenerationAndValidation(t *testing.T) {
 		t.Errorf("expected ErrInvalidToken for expired token, got: %v", err)
 	}
 }
+

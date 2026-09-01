@@ -124,3 +124,4 @@ func CheckOwnership(ctx context.Context, resourceOwnerID string) bool {
 	}
 	return claims.UserID == resourceOwnerID
 }
+
