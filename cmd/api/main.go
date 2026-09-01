@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
@@ -101,6 +102,10 @@ func main() {
 	r.Handle("POST /api/v1/auth/login", http.HandlerFunc(authHandler.Login))
 	r.Handle("GET /api/v1/auth/me", auth.Authenticate(jwtSecret)(http.HandlerFunc(authHandler.Me)))
 
+	// RBAC Protected Demo Endpoints
+	r.Handle("GET /api/v1/organizer/dashboard", auth.Authenticate(jwtSecret)(auth.RequireOrganizer()(http.HandlerFunc(handleOrganizerDashboard))))
+	r.Handle("GET /api/v1/admin/dashboard", auth.Authenticate(jwtSecret)(auth.RequireAdmin()(http.HandlerFunc(handleAdminDashboard))))
+
 	srv := &http.Server{
 		Addr:         ":" + port,
 		Handler:      r.Chain(),
@@ -182,4 +187,26 @@ func handleGetEvent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"event_id":"` + id + `"}`))
+}
+
+func handleOrganizerDashboard(w http.ResponseWriter, r *http.Request) {
+	claims, _ := auth.GetUserFromContext(r.Context())
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "welcome organizer",
+		"user_id": claims.UserID,
+		"role":    claims.Role,
+	})
+}
+
+func handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
+	claims, _ := auth.GetUserFromContext(r.Context())
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "welcome admin",
+		"user_id": claims.UserID,
+		"role":    claims.Role,
+	})
 }

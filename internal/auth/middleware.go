@@ -88,3 +88,30 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 		})
 	}
 }
+
+// RequireBuyer convenience middleware ensuring user is a buyer.
+func RequireBuyer() func(http.Handler) http.Handler {
+	return RequireRole(RoleBuyer)
+}
+
+// RequireOrganizer convenience middleware ensuring user is an organizer (or admin).
+func RequireOrganizer() func(http.Handler) http.Handler {
+	return RequireRole(RoleOrganizer, RoleAdmin)
+}
+
+// RequireAdmin convenience middleware ensuring user is an admin.
+func RequireAdmin() func(http.Handler) http.Handler {
+	return RequireRole(RoleAdmin)
+}
+
+// CheckOwnership checks if the authenticated context user is either the resource owner or an admin.
+func CheckOwnership(ctx context.Context, resourceOwnerID string) bool {
+	claims, ok := GetUserFromContext(ctx)
+	if !ok {
+		return false
+	}
+	if strings.EqualFold(claims.Role, RoleAdmin) {
+		return true
+	}
+	return claims.UserID == resourceOwnerID
+}

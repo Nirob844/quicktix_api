@@ -118,3 +118,4 @@ func TestAuthMiddleware(t *testing.T) {
 		t.Errorf("expected 200 OK for organizer accessing organizer endpoint, got %d", recOrgAccess.Code)
 	}
 }
+

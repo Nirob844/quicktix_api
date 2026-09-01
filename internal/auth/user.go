@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+// Standard RBAC Role Constants
+const (
+	RoleBuyer     = "buyer"
+	RoleOrganizer = "organizer"
+	RoleAdmin     = "admin"
+)
+
 var (
 	ErrUserAlreadyExists = errors.New("user with this email already exists")
 	ErrUserNotFound      = errors.New("user not found")
@@ -45,10 +52,10 @@ func (r *RegisterRequest) Validate() error {
 		return errors.New("full name is required")
 	}
 	if r.Role == "" {
-		r.Role = "buyer"
+		r.Role = RoleBuyer
 	}
 	r.Role = strings.ToLower(r.Role)
-	if r.Role != "buyer" && r.Role != "organizer" && r.Role != "admin" {
+	if r.Role != RoleBuyer && r.Role != RoleOrganizer && r.Role != RoleAdmin {
 		return ErrInvalidRole
 	}
 	return nil
@@ -86,4 +93,3 @@ type AuthResponse struct {
 	Token string       `json:"token"`
 	User  UserResponse `json:"user"`
 }
-
